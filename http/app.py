@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-from flask import Flask, abort
+from flask import Flask, abort, redirect
 
 app = Flask(__name__)  # 创建对象
 
@@ -19,10 +19,11 @@ def h303():
     return "", 303, {'Location':'http://www.holydatura.com'}
 
 
-#redirect重定向
-@app.route("/h303")
-def h303():
-    return "", 303, {'Location':'http://www.holydatura.com'}
+#redirect重定向 手动重定向 F12 点击hredirect 查看status 302
+@app.route("/hredirect")
+def hredirect():
+    return redirect('http://www.holydatura.com')
+
 
 @app.route('/404')
 def not_found():
