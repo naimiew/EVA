@@ -8,7 +8,16 @@ app = Flask(__name__)  # 创建对象
 
 @app.route("/")  # 定义一个路由，指定一个路由
 def index():  # 路由指向index
-    return "<h1 style='color:red'>hello world</h1>"
+    name = request.args.get('name')
+    if name is None:
+        name = request.cookies.get('name', 'May i help you?')
+    response = '<h1>Hello, %s</h1>' % escape(name)
+    if 'logged_in' in session:
+        response += '[Authenticated]'
+    else:
+        response += '[Not Authenticated]'
+    return response
+    # return "<h1 style='color:red'>hello world</h1>"
 
 
 # 指定不同状态码 F12 network 查看status
@@ -83,7 +92,7 @@ def hmime(content_type):
         return response
 
     elif content_type == 'xml':
-        #xml格式要求别开头加tab
+        # xml格式要求别开头加tab
         body = '''<?xml version="1.0" encoding="UTF-8"?>
                     <note>
                       <to>Peter</to>
@@ -98,34 +107,72 @@ def hmime(content_type):
 
     elif content_type == 'json':
         body = {
-                "note": {
-                        "to": "Peter",
-                        "from": "Jane",
-                        "heading": "Remider",
-                        "body": "Don't forget the party!"
-                        }
-                }
+            "note": {
+                "to": "Peter",
+                "from": "Jane",
+                "heading": "Remider",
+                "body": "Don't forget the party!"
+            }
+        }
         # JSON 不能这样response
-        #response = make_response(body)  应该dumps()方法  字典，列表，元组  一般不这样
-        #优化为 jsonify
+        # response = make_response(body)  应该dumps()方法  字典，列表，元组  一般不这样
+        # 优化为 jsonify
         response = make_response(json.dumps(body))
         response.mimetype = 'application/json'
         return response
 
+    elif content_type == 'error':
+        return jsonify(message='ERROR!'), 500
+
     elif content_type == 'jsonify':
         body = {
-                "note": {
-                        "to": "Peter",
-                        "from": "Jane",
-                        "heading": "Remider",
-                        "body": "Don't forget the party!"
-                        }
-                }
+            "note": {
+                "to": "Peter",
+                "from": "Jane",
+                "heading": "Remider",
+                "body": "Don't forget the party!"
+            }
+        }
         response = jsonify(body)
 
     else:
-        return redirect(url_for('not_found')) #重定向404
-    return response #返回jsonify(body)
+        return redirect(url_for('not_found'))  # 重定向404
+    return response  # 返回jsonify(body)
+
+
+# cookie
+# set
+@app.route('/mycookie/<name>')
+def set_cookie(name):
+    response = make_response(redirect(url_for('index')))
+    response.set_cookie('name', name)
+    return response
+
+
+# log in user
+@app.route('/justlogin')
+def login():
+    session['logged_in'] = True
+    return redirect(url_for('index'))
+
+
+# protect view
+@app.route('/justadmin')
+def admin():
+    if 'logged_in' not in session:
+        return redirect(url_for('h203'))
+    return 'Welcome to admin page.'
+
+
+# log out user
+@app.route('/justlogout')
+def logout():
+    if 'logged_in' in session:
+        session.pop('logged_in')  # 清除
+    return redirect(url_for('index'))
+
+
+# 卡在python-dotenv 的.env 与 session
 
 if __name__ == "__main__":  # 运行程序
     app.run()
