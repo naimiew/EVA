@@ -39,45 +39,93 @@ def hh():
 def hi():
     return "<h1 style='color:yellow'>hi</h1>"
 
-#手动返回404   页面就是提示Not Found
+
+# 手动返回404   页面就是提示Not Found
 @app.route('/404')
 def not_found():
     abort(404)
 
-#mimetype
-@app.route('/hmime')
-def hmime():
-    body =  '''Note
-            to: Peter
-            from: Jane
-            heading: Reminder
-            body: Don't forget the party!
-            '''
 
-    response = make_response(body)
-    response.mimetype = 'text/plain'
-    return response
+# mimetype MIME类型
+# 纯文本'text/plain' HTML'text/html' XML'application/xml' JSON’application/json‘
+@app.route('/hmime', defaults={'content_type': 'text'})  # 默认值
+@app.route('/hmime/<content_type>')
+def hmime(content_type):
+    content_type = content_type.lower()  # lower() 方法转换字符串中所有大写字符为小写。
+    if content_type == 'text':
+        body = '''
+                Note
+                to: Peter
+                from: Jane
+                heading: Reminder
+                body: Don't forget the party!
+               '''
+        response = make_response(body)
+        response.mimetype = 'text/plain'
+        return response
+
+    elif content_type == 'html':
+        body = '''
+                <!DOCTYPE html>
+                    <html>
+                    <head></head>
+                    <body>
+                      <h1>Note</h1>
+                      <p>to: Peter</p>
+                      <p>from: Jane</p>
+                      <p>heading: Reminder</p>
+                      <p>body: <strong>Don't forget the party!</strong></p>
+                    </body>
+                    </html>
+               '''
+        response = make_response(body)
+        response.mimetype = 'text/html'
+        return response
+
+    elif content_type == 'xml':
+        #xml格式要求别开头加tab
+        body = '''<?xml version="1.0" encoding="UTF-8"?>
+                    <note>
+                      <to>Peter</to>
+                      <from>Jane</from>
+                      <heading>Reminder</heading>
+                      <body>Don't forget the party!</body>
+                    </note>
+               '''
+        response = make_response(body)
+        response.mimetype = 'application/xml'
+        return response
+
+    elif content_type == 'json':
+        body = {
+                "note": {
+                        "to": "Peter",
+                        "from": "Jane",
+                        "heading": "Remider",
+                        "body": "Don't forget the party!"
+                        }
+                }
+        # JSON 不能这样response
+        #response = make_response(body)  应该dumps()方法  字典，列表，元组  一般不这样
+        #优化为 jsonify
+        response = make_response(json.dumps(body))
+        response.mimetype = 'application/json'
+        return response
+
+    elif content_type == 'jsonify':
+        body = {
+                "note": {
+                        "to": "Peter",
+                        "from": "Jane",
+                        "heading": "Remider",
+                        "body": "Don't forget the party!"
+                        }
+                }
+        response = jsonify(body)
+
+    else:
+        return redirect(url_for('not_found')) #重定向404
+    return response #返回jsonify(body)
 
 if __name__ == "__main__":  # 运行程序
     app.run()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
