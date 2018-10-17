@@ -44,6 +44,40 @@ def hi():
 def not_found():
     abort(404)
 
+#mimetype
+@app.route('/hmime')
+def hmime():
+    body =  '''Note
+            to: Peter
+            from: Jane
+            heading: Reminder
+            body: Don't forget the party!
+            '''
+
+    response = make_response(body)
+    response.mimetype = 'text/plain'
+    return response
 
 if __name__ == "__main__":  # 运行程序
     app.run()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
