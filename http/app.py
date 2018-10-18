@@ -1,9 +1,12 @@
 # -*- coding:utf-8 -*-
 from flask import *
+import os
 
 # Flask, abort, redirect, url_for
 
 app = Flask(__name__)  # 创建对象
+app.secret_key = os.getenv('SECRET_KEY', 'secret string')
+what_key = app.secret_key
 
 
 @app.route("/")  # 定义一个路由，指定一个路由
@@ -11,7 +14,7 @@ def index():  # 路由指向index
     name = request.args.get('name')
     if name is None:
         name = request.cookies.get('name', 'May i help you?')
-    response = '<h1>Hello, %s</h1>' % escape(name)
+    response = '<h1>Hello, %s</h1>' % escape(name + what_key)
     if 'logged_in' in session:
         response += '[Authenticated]'
     else:
@@ -151,14 +154,14 @@ def set_cookie(name):
 
 # log in user
 @app.route('/justlogin')
-def login():
+def justlogin():
     session['logged_in'] = True
     return redirect(url_for('index'))
 
 
 # protect view
 @app.route('/justadmin')
-def admin():
+def justadmin():
     if 'logged_in' not in session:
         return redirect(url_for('h203'))
     return 'Welcome to admin page.'
@@ -166,7 +169,7 @@ def admin():
 
 # log out user
 @app.route('/justlogout')
-def logout():
+def justlogout():
     if 'logged_in' in session:
         session.pop('logged_in')  # 清除
     return redirect(url_for('index'))
