@@ -5,8 +5,8 @@ import os
 # Flask, abort, redirect, url_for
 
 app = Flask(__name__)  # 创建对象
-app.secret_key = os.getenv('SECRET_KEY', 'secret string')
-what_key = app.secret_key
+app.secret_key = os.getenv('SECRET_KEY')
+app.config['SESSION_TYPE'] = 'filesystem'  # session 解决报错问题1
 
 
 @app.route("/")  # 定义一个路由，指定一个路由
@@ -14,7 +14,7 @@ def index():  # 路由指向index
     name = request.args.get('name')
     if name is None:
         name = request.cookies.get('name', 'May i help you?')
-    response = '<h1>Hello, %s</h1>' % escape(name + what_key)
+    response = '<h1>Hello. %s</h1>' % escape(name)# + ' *** ' + os.getenv('SECRET_KEY') + ' *** ')
     if 'logged_in' in session:
         response += '[Authenticated]'
     else:
@@ -171,11 +171,12 @@ def justadmin():
 @app.route('/justlogout')
 def justlogout():
     if 'logged_in' in session:
-        session.pop('logged_in')  # 清除
-    return redirect(url_for('index'))
+        session.pop('logged_in')  # 清除session
+        resp = make_response(redirect(url_for('index')))
+        resp.delete_cookie('name')# 清除cookie
+    return resp
 
-
-# 卡在python-dotenv 的.env 与 session
 
 if __name__ == "__main__":  # 运行程序
+    app.debug = True  # session 解决报错问题2
     app.run()
