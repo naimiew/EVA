@@ -2,6 +2,11 @@
 from flask import *
 import os
 
+try:
+    from urlparse import urlparse, urljoin
+except ImportError:  # 兼容python3
+    from urllib.parse import urlparse, urljoin
+
 # Flask, abort, redirect, url_for
 
 app = Flask(__name__)  # 创建对象
@@ -14,7 +19,7 @@ def index():  # 路由指向index
     name = request.args.get('name')
     if name is None:
         name = request.cookies.get('name', 'May i help you?')
-    response = '<h1>Hello. %s</h1>' % escape(name)# + ' *** ' + os.getenv('SECRET_KEY') + ' *** ')
+    response = '<h1>Hello. %s</h1>' % escape(name)  # + ' *** ' + os.getenv('SECRET_KEY') + ' *** ')
     if 'logged_in' in session:
         response += '[Authenticated]'
     else:
@@ -173,8 +178,43 @@ def justlogout():
     if 'logged_in' in session:
         session.pop('logged_in')  # 清除session
         resp = make_response(redirect(url_for('index')))
-        resp.delete_cookie('name')# 清除cookie
-    return resp
+        resp.delete_cookie('name')  # 清除cookie
+        return resp
+
+
+# redirect to last page  跟着写的 http进阶
+@app.route('/hfoo')
+def hfoo():
+    return '<h1>Foo page</h1><a href="%s">Do something and redirect</a>' \
+           % url_for('do_something', next=request.full_path)
+
+
+@app.route('/hbar')
+def hbar():
+    return '<h1>Bar page</h1><a href="%s">Do something and redirect</a>' \
+           % url_for('do_something', next=request.full_path)
+
+
+@app.route('/do-something')
+def do_something():
+    # do something here
+    return redirect_back()
+
+
+def is_safe_url(target):
+    ref_url = urlparse(request.host_url)   #获取主机url
+    test_url = urlparse(urljoin(request.host_url, target))  #目标url转绝对url
+    return test_url.scheme in ('http', 'https') and \
+           ref_url.netloc == test_url.netloc
+
+
+def redirect_back(default='hh', **kwargs):  #重定向回上一页
+    for target in request.args.get('next'), request.referrer:
+        if not target:
+            continue
+        if is_safe_url(target):
+            return redirect(target)
+    return redirect(url_for(default, **kwargs))
 
 
 if __name__ == "__main__":  # 运行程序
