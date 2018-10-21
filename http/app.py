@@ -6,7 +6,9 @@ try:
     from urlparse import urlparse, urljoin
 except ImportError:  # 兼容python3
     from urllib.parse import urlparse, urljoin
-
+from jinja2 import escape
+from jinja2.utils import generate_lorem_ipsum
+from flask import Flask, make_response, request, redirect, url_for, abort, session, jsonify
 # Flask, abort, redirect, url_for
 
 app = Flask(__name__)  # 创建对象
@@ -182,6 +184,34 @@ def justlogout():
         return resp
 
 
+# AJAX
+@app.route('/post')
+def show_post():
+    post_body = generate_lorem_ipsum(n=2)
+    return '''
+<h1>A very long post</h1>
+<div class="body">%s</div>
+<button id="load">Load More</button>
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script type="text/javascript">
+$(function() {
+    $('#load').click(function() {
+        $.ajax({
+            url: '/more',  
+            type: 'get',
+            success: function(data){
+                $('.body').append(data);
+            }
+        })
+    })
+})
+</script>''' % post_body
+
+
+@app.route('/more')
+def load_post():
+    return generate_lorem_ipsum(n=1)
+
 # redirect to last page  跟着写的 http进阶
 @app.route('/hfoo')
 def hfoo():
@@ -202,13 +232,14 @@ def do_something():
 
 
 def is_safe_url(target):
-    ref_url = urlparse(request.host_url)   #获取主机url
-    test_url = urlparse(urljoin(request.host_url, target))  #目标url转绝对url
+    ref_url = urlparse(request.host_url)  # 获取主机url
+    test_url = urlparse(urljoin(request.host_url, target))  # 目标url转绝对url
     return test_url.scheme in ('http', 'https') and \
            ref_url.netloc == test_url.netloc
 
 
-def redirect_back(default='hh', **kwargs):  #重定向回上一页
+# 重定向回上一页  书里 40%的位置 url_for() 多余的关键字参数会被作为查询字符串附加到生成的URL后面
+def redirect_back(default='hh', **kwargs):
     for target in request.args.get('next'), request.referrer:
         if not target:
             continue
